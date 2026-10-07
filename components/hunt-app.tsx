@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 
 export function Shell({ children }: { children: React.ReactNode }) {
-  return <div className="min-h-screen bg-[radial-gradient(circle_at_top,#eaf4ff_0%,#f8f7ff_42%,#fff_75%)] text-slate-950"><header className="border-b border-blue-100/80 bg-white/80 backdrop-blur"><div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-4"><div className="flex size-10 items-center justify-center rounded-full bg-[#155EEF] text-lg font-black text-white shadow-sm">W</div><div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#155EEF]">Sanofi presents</p><p className="text-sm font-bold text-slate-900">World Diabetes Day Scavenger Hunt</p></div></div></header><main className="mx-auto w-full max-w-2xl px-5 py-8 sm:py-12">{children}</main></div>
+  return <div className="min-h-screen bg-[radial-gradient(circle_at_top,#eaf4ff_0%,#f8f7ff_42%,#fff_75%)] text-slate-950"><header className="border-b border-blue-100/80 bg-white/80 backdrop-blur"><div className="mx-auto flex max-w-2xl items-center gap-3 px-5 py-4"><div className="flex size-10 items-center justify-center rounded-full bg-[#155EEF] text-lg font-black text-white shadow-sm">W</div><div><p className="text-sm font-bold text-slate-900">World Diabetes Day Scavenger Hunt</p></div></div></header><main className="mx-auto w-full max-w-2xl px-5 py-8 sm:py-12">{children}</main></div>
 }
 
 function TeamForm({ onStarted }: { onStarted: (token: string) => void }) {
