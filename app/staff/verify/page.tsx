@@ -1,0 +1,4 @@
+import { readProgress } from "@/app/actions"
+import { posters } from "@/lib/hunt"
+
+export default async function VerifyPage({ searchParams }: { searchParams: Promise<{ t?: string }> }) { const { t } = await searchParams; const progress = await readProgress(t); const valid = Boolean(progress?.finishedAt && progress.solved.length === posters.length); return <main className="flex min-h-screen items-center justify-center bg-slate-50 p-6"><section className="w-full max-w-md rounded-3xl bg-white p-8 text-center shadow-xl"><div className={`mx-auto mb-5 flex size-16 items-center justify-center rounded-full text-3xl ${valid ? "bg-emerald-100" : "bg-red-100"}`}>{valid ? "✓" : "!"}</div><h1 className="text-2xl font-black">{valid ? "Valid finish" : "Invalid verification"}</h1>{valid && <><p className="mt-3 text-lg font-semibold">{progress.teamName}</p><p className="mt-1 text-sm text-slate-500">Completed all 3 stops.</p></>}</section></main> }
