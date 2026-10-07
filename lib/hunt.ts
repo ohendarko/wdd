@@ -1,6 +1,6 @@
 export type Poster = { id: string; token: string; label: string; riddle: string; acceptedAnswers: string[]; clue: string }
 
-export const startRiddle = { riddle: "I help your cells use sugar for fuel,\nI'm made in a gland tucked inside,\nWithout me, your blood sugar may not stay cool,\nWhat am I that helps glucose get inside?", acceptedAnswers: ["insulin", "insulin hormone", "hormone insulin"] }
+export const startRiddle = { riddle: "I come from the food on your plate,\nI travel through your blood each day,\nToo much or too little isn't great,\nWhat sugar fuels you on your way?", acceptedAnswers: ["glucose", "blood glucose", "blood sugar", "sugar"] }
 
 export const posters: Poster[] = [
   { id: "stop-1", token: "bluecircle7x4m2q9", label: "Stop 1", riddle: "I make insulin to help sugar along,\nI sit inside you, working away,\nWhen I do my job, things can stay strong,\nWhat am I that works every day?", acceptedAnswers: ["pancreas", "pancreas gland", "pancrease"], clue: "[CLUE TO STOP 1 LOCATION]" },
