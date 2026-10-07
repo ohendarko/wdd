@@ -8,5 +8,5 @@ export async function GET(request: Request) {
   const posterToken = url.searchParams.get("poster")
   const progress = await readProgress(token)
   if (!progress) return NextResponse.json({ progress: null }, { status: 401 })
-  return NextResponse.json({ token, progress, finished: Boolean(progress.finishedAt), clue: progress.nextPosterId ? posterById(progress.nextPosterId)?.clue : undefined, poster: posterToken ? posterByToken(posterToken) : undefined })
+  return NextResponse.json({ token, progress, finished: Boolean(progress.finishedAt), clue: progress.nextPosterId ? posterById(progress.nextPosterId)?.clue : undefined, poster: progress.introSolvedAt && posterToken ? posterByToken(posterToken) : undefined })
 }

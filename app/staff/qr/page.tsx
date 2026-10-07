@@ -1,15 +1,13 @@
 import QRCode from "qrcode"
 import { headers } from "next/headers"
-import { posters } from "@/lib/hunt"
+import { absoluteSiteUrl, posters } from "@/lib/hunt"
 import { requireStaff } from "@/app/staff/layout"
 
 export default async function StaffQrPage() {
   await requireStaff("/staff/qr")
   const headerList = await headers()
-  const host = headerList.get("x-forwarded-host") || headerList.get("host") || "localhost:3000"
-  const protocol = headerList.get("x-forwarded-proto") || "https"
-  const rows = await Promise.all(posters.map(async (poster) => {
-    const url = `${protocol}://${host}/p/${poster.token}`
+    const rows = await Promise.all(posters.map(async (poster) => {
+    const url = absoluteSiteUrl(`/p/${poster.token}`)
     const qr = await QRCode.toDataURL(url, { width: 1000, margin: 3, errorCorrectionLevel: "H" })
     return { ...poster, url, qr }
   }))
