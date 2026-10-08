@@ -1,5 +1,10 @@
 import "server-only"
 import { Redis } from "@upstash/redis"
+import { unstable_noStore as noStore } from "next/cache"
+
+export const HUNT_TEAMS_KEY = "hunt:teams"
+export const HUNT_EVENTS_KEY = "hunt:events"
+export const HUNT_WRONG_KEY = "hunt:wrong"
 
 const redisUrlName = process.env.UPSTASH_REDIS_REST_URL ? "UPSTASH_REDIS_REST_URL" : process.env.KV_REST_API_URL ? "KV_REST_API_URL" : null
 const redisTokenName = process.env.UPSTASH_REDIS_REST_TOKEN ? "UPSTASH_REDIS_REST_TOKEN" : process.env.KV_REST_API_TOKEN ? "KV_REST_API_TOKEN" : null
@@ -11,64 +16,36 @@ export type RedisStatus = { configured: boolean; variables: string[]; connection
 export type HuntLog = { teams: HuntSummary[]; events: HuntEvent[]; status: RedisStatus }
 
 function withTimeout<T>(promise: Promise<T>) { return Promise.race([promise, new Promise<never>((_, reject) => setTimeout(() => reject(new Error("Redis timeout")), 2000))]) }
-async function safe(task: () => Promise<unknown>) { if (!redis) return; try { await withTimeout(task()) } catch (error) { console.error("[log]", error) } }
-
-export function logEvent(event: HuntEvent, summary: HuntSummary) { if (!redis) return; void safe(async () => { await redis.hset("hunt:teams", { [summary.teamId]: JSON.stringify(summary) }); await redis.lpush("hunt:events", JSON.stringify(event)); await redis.ltrim("hunt:events", 0, 499) }) }
-export function updateTeamSummary(summary: HuntSummary) { void safe(() => redis ? redis.hset("hunt:teams", { [summary.teamId]: JSON.stringify(summary) }) : Promise.resolve()) }
-
+function report(error: unknown) { console.error("[log]", error) }
+async function safe(task: () => Promise<unknown>) { try { await withTimeout(task()) } catch (error) { report(error) } }
+function parseValue<T>(value: unknown, key: string, field: string): T | null { if (typeof value !== "string") return value as T; try { return JSON.parse(value) as T } catch (error) { report(new Error(`Unable to parse ${key}[${field}]: ${error instanceof Error ? error.message : String(error)}`)); return null } }
 function emptyStatus(error?: string): RedisStatus { return { configured: Boolean(redis), variables: [redisUrlName, redisTokenName].filter((value): value is string => Boolean(value)), connection: redis ? "Not checked" : "Not configured", teamCount: 0, eventCount: 0, error } }
+
+export function logEvent(event: HuntEvent, summary: HuntSummary) { if (!redis) return; void safe(async () => { const stored = { ...summary }; delete (stored as Partial<HuntSummary>).wrongGuesses; await redis.hset(HUNT_TEAMS_KEY, { [summary.teamId]: JSON.stringify(stored) }); await redis.lpush(HUNT_EVENTS_KEY, JSON.stringify(event)); await redis.ltrim(HUNT_EVENTS_KEY, 0, 499) }) }
+export function updateTeamSummary(summary: HuntSummary) { void safe(() => { if (!redis) return Promise.resolve(); const stored = { ...summary }; delete (stored as Partial<HuntSummary>).wrongGuesses; return redis.hset(HUNT_TEAMS_KEY, { [summary.teamId]: JSON.stringify(stored) }) }) }
+export function incrementWrongGuess(teamId: string) { if (redis) void safe(() => redis.hincrby(HUNT_WRONG_KEY, teamId, 1)) }
+
 export async function getHuntLog(): Promise<HuntLog> {
+  noStore()
   if (!redis) return { teams: [], events: [], status: emptyStatus() }
   try {
-    const [ping, teamValues, eventValues] = await withTimeout(Promise.all([redis.ping(), redis.hgetall<Record<string, string>>("hunt:teams"), redis.lrange<string>("hunt:events", 0, 499)]))
-    const teams = Object.values(teamValues || {}).flatMap((value) => { try { return [JSON.parse(value) as HuntSummary] } catch { return [] } })
-    const events = (eventValues || []).flatMap((value) => { try { return [JSON.parse(value) as HuntEvent] } catch { return [] } })
+    const [ping, teamValues, eventValues, wrongValues] = await withTimeout(Promise.all([redis.ping(), redis.hgetall<Record<string, unknown>>(HUNT_TEAMS_KEY), redis.lrange<unknown>(HUNT_EVENTS_KEY, 0, 499), redis.hgetall<Record<string, unknown>>(HUNT_WRONG_KEY)]))
+    const wrong = wrongValues && typeof wrongValues === "object" ? wrongValues as Record<string, unknown> : {}
+    const teams = Object.entries(teamValues || {}).flatMap(([teamId, value]) => { const parsed = parseValue<Omit<HuntSummary, "wrongGuesses">>(value, HUNT_TEAMS_KEY, teamId); if (!parsed || typeof parsed !== "object") return []; return [{ ...parsed, teamId: parsed.teamId || teamId, wrongGuesses: Number(wrong[parsed.teamId || teamId] || 0) }] })
+    const events = (eventValues || []).flatMap((value, index) => { const parsed = parseValue<HuntEvent>(value, HUNT_EVENTS_KEY, String(index)); return parsed && typeof parsed === "object" ? [parsed] : [] })
     return { teams, events, status: { ...emptyStatus(), connection: String(ping).toUpperCase() === "PONG" ? "OK" : String(ping), teamCount: teams.length, eventCount: events.length, latestEvent: events[0]?.at } }
-  } catch (error) {
-    console.error("[log] Failed to read log:", error)
-    const message = error instanceof Error ? error.message : String(error)
-    return { teams: [], events: [], status: { ...emptyStatus(message), connection: message, error: message } }
-  }
+  } catch (error) { report(error); const message = error instanceof Error ? error.message : String(error); return { teams: [], events: [], status: { ...emptyStatus(message), connection: message, error: message } } }
 }
-export async function clearHuntLog() { if (!redis) return; try { await withTimeout(redis.del("hunt:teams", "hunt:events")) } catch (error) { console.error("[log]", error); throw error } }
-export async function getTeamSummary(teamId: string) { if (!redis) return null; try { const value = await withTimeout(redis.hget<string>("hunt:teams", teamId)); return value ? JSON.parse(value) as HuntSummary : null } catch (error) { console.error("[log] Failed to read team summary:", error); return null } }
-export async function markPrizeGiven(teamId: string, at: string) { if (!redis) return { prizeGivenAt: at }; try { const existing = await withTimeout(redis.hget<string>("hunt:teams", teamId)); if (!existing) return null; const summary = JSON.parse(existing) as HuntSummary; if (summary.prizeGivenAt) return { prizeGivenAt: summary.prizeGivenAt }; summary.prizeGivenAt = at; summary.lastActivity = at; await withTimeout(redis.hset("hunt:teams", { [teamId]: JSON.stringify(summary) })); return { prizeGivenAt: at } } catch (error) { console.error("[log]", error); throw error } }
-export function redisConfiguration() { return { configured: Boolean(redis), variables: [redisUrlName, redisTokenName].filter((value): value is string => Boolean(value)) } }
-export async function pingRedis() { if (!redis) return "Not configured"; try { const result = await withTimeout(redis.ping()); return String(result).toUpperCase() === "PONG" ? "OK" : String(result) } catch (error) { console.error("[log]", error); return error instanceof Error ? error.message : String(error) } }
+export async function clearHuntLog() { if (!redis) return; try { await withTimeout(redis.del(HUNT_TEAMS_KEY, HUNT_EVENTS_KEY, HUNT_WRONG_KEY)) } catch (error) { report(error); throw error } }
+export async function getTeamSummary(teamId: string) { if (!redis) return null; try { const value = await withTimeout(redis.hget<unknown>(HUNT_TEAMS_KEY, teamId)); const parsed = parseValue<Omit<HuntSummary, "wrongGuesses">>(value, HUNT_TEAMS_KEY, teamId); return parsed ? { ...parsed, teamId, wrongGuesses: 0 } as HuntSummary : null } catch (error) { report(error); return null } }
+export async function markPrizeGiven(teamId: string, at: string) { if (!redis) return { prizeGivenAt: at }; try { const existing = await withTimeout(redis.hget<unknown>(HUNT_TEAMS_KEY, teamId)); const summary = parseValue<HuntSummary>(existing, HUNT_TEAMS_KEY, teamId); if (!summary) return null; summary.prizeGivenAt = summary.prizeGivenAt || at; summary.lastActivity = at; delete (summary as Partial<HuntSummary>).wrongGuesses; await withTimeout(redis.hset(HUNT_TEAMS_KEY, { [teamId]: JSON.stringify(summary) })); return { prizeGivenAt: summary.prizeGivenAt } } catch (error) { report(error); throw error } }
 export const redisIsConfigured = Boolean(redis)
 export const redisVariableNames = [redisUrlName, redisTokenName].filter((value): value is string => Boolean(value))
-
 export type { HuntLog as LiveLog }
-
-// Keep the logger's public behavior stable while exposing diagnostics to staff.
-void redisConfiguration
-void pingRedis
+export async function getHuntLogLegacy() { return getHuntLog() }
+export { getHuntLog as readHuntLog }
+export const logVersion = 3
+void logVersion
 void redisIsConfigured
 void redisVariableNames
-void (null as unknown as HuntLog)
-
-export async function getHuntLogLegacy() { return getHuntLog() }
-
-// Compatibility aliases used by older imports.
-export { getHuntLog as readHuntLog }
-
-// The diagnostic helpers above are intentionally server-only.
-void 0
-
-// no-op marker
-export const logVersion = 2
-
-// preserve module tree-shaking boundaries
-void logVersion
-
-// end
-
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _keepTypes = undefined
-void _keepTypes
-
-// Existing callers use getHuntLog directly.
-
-// Redis writes are always best-effort and never break the hunt.
-
-// End of module.
+void getHuntLogLegacy
