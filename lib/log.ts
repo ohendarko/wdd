@@ -6,6 +6,9 @@ import { after } from "next/server"
 export const HUNT_TEAMS_KEY = "hunt:teams"
 export const HUNT_EVENTS_KEY = "hunt:events"
 export const HUNT_WRONG_KEY = "hunt:wrong"
+export const HUNT_NAMES_KEY = "hunt:names"
+export const HUNT_TOKENS_KEY = "hunt:tokens"
+export const HUNT_LOCKS_KEY = "hunt:locks"
 
 const redisUrlName = process.env.UPSTASH_REDIS_REST_URL ? "UPSTASH_REDIS_REST_URL" : process.env.KV_REST_API_URL ? "KV_REST_API_URL" : null
 const redisTokenName = process.env.UPSTASH_REDIS_REST_TOKEN ? "UPSTASH_REDIS_REST_TOKEN" : process.env.KV_REST_API_TOKEN ? "KV_REST_API_TOKEN" : null
@@ -26,6 +29,11 @@ function emptyStatus(error?: string): RedisStatus { return { configured: Boolean
 export function logEvent(event: HuntEvent, summary: HuntSummary) { sendToSheet(event); if (!redis) return; void safe(async () => { const stored = { ...summary }; delete (stored as Partial<HuntSummary>).wrongGuesses; await redis.hset(HUNT_TEAMS_KEY, { [summary.teamId]: JSON.stringify(stored) }); await redis.lpush(HUNT_EVENTS_KEY, JSON.stringify(event)); await redis.ltrim(HUNT_EVENTS_KEY, 0, 499) }) }
 export function updateTeamSummary(summary: HuntSummary) { void safe(() => { if (!redis) return Promise.resolve(); const stored = { ...summary }; delete (stored as Partial<HuntSummary>).wrongGuesses; return redis.hset(HUNT_TEAMS_KEY, { [summary.teamId]: JSON.stringify(stored) }) }) }
 export function incrementWrongGuess(teamId: string) { if (redis) void safe(() => redis.hincrby(HUNT_WRONG_KEY, teamId, 1)) }
+export function saveLatestToken(teamId: string, token: string) { if (redis) void safe(() => redis.hset(HUNT_TOKENS_KEY, { [teamId]: token })) }
+export async function getTeamRecord(name: string) { if (!redis) throw new Error("Redis unavailable"); return redis.hget<{ teamId: string; pinHash: string }>(HUNT_NAMES_KEY, name) }
+export async function saveTeamRecord(name: string, record: { teamId: string; pinHash: string }) { if (redis) await withTimeout(redis.hset(HUNT_NAMES_KEY, { [name]: JSON.stringify(record) })) }
+export async function getLatestToken(teamId: string) { if (!redis) throw new Error("Redis unavailable"); return redis.hget<string>(HUNT_TOKENS_KEY, teamId) }
+export async function resetTeamPin(teamId: string, pinHash: string) { if (!redis) throw new Error("Redis unavailable"); const teams = await withTimeout(redis.hgetall<Record<string, unknown>>(HUNT_NAMES_KEY)); for (const [name, value] of Object.entries(teams || {})) { const record = parseValue<{ teamId: string; pinHash: string }>(value, HUNT_NAMES_KEY, name); if (record?.teamId === teamId) { await withTimeout(redis.hset(HUNT_NAMES_KEY, { [name]: JSON.stringify({ ...record, pinHash }) })); await withTimeout(redis.hdel(HUNT_LOCKS_KEY, name)); return true } } return false }
 
 export async function getHuntLog(): Promise<HuntLog> {
   noStore()
@@ -38,7 +46,7 @@ export async function getHuntLog(): Promise<HuntLog> {
     return { teams, events, status: { ...emptyStatus(), connection: String(ping).toUpperCase() === "PONG" ? "OK" : String(ping), teamCount: teams.length, eventCount: events.length, latestEvent: events[0]?.at } }
   } catch (error) { report(error); const message = error instanceof Error ? error.message : String(error); return { teams: [], events: [], status: { ...emptyStatus(message), connection: message, error: message } } }
 }
-export async function clearHuntLog() { if (!redis) return; try { await withTimeout(redis.del(HUNT_TEAMS_KEY, HUNT_EVENTS_KEY, HUNT_WRONG_KEY)) } catch (error) { report(error); throw error } }
+export async function clearHuntLog() { if (!redis) return; try { await withTimeout(redis.del(HUNT_TEAMS_KEY, HUNT_EVENTS_KEY, HUNT_WRONG_KEY, HUNT_NAMES_KEY, HUNT_TOKENS_KEY, HUNT_LOCKS_KEY)) } catch (error) { report(error); throw error } }
 export async function getTeamSummary(teamId: string) { if (!redis) return null; try { const value = await withTimeout(redis.hget<unknown>(HUNT_TEAMS_KEY, teamId)); const parsed = parseValue<Omit<HuntSummary, "wrongGuesses">>(value, HUNT_TEAMS_KEY, teamId); return parsed ? { ...parsed, teamId, wrongGuesses: 0 } as HuntSummary : null } catch (error) { report(error); return null } }
 export async function markPrizeGiven(teamId: string, at: string) { if (!redis) return { prizeGivenAt: at }; try { const existing = await withTimeout(redis.hget<unknown>(HUNT_TEAMS_KEY, teamId)); const summary = parseValue<HuntSummary>(existing, HUNT_TEAMS_KEY, teamId); if (!summary) return null; summary.prizeGivenAt = summary.prizeGivenAt || at; summary.lastActivity = at; delete (summary as Partial<HuntSummary>).wrongGuesses; await withTimeout(redis.hset(HUNT_TEAMS_KEY, { [teamId]: JSON.stringify(summary) })); return { prizeGivenAt: summary.prizeGivenAt } } catch (error) { report(error); throw error } }
 export const redisIsConfigured = Boolean(redis)
