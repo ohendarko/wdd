@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 import { redirect } from "next/navigation"
 import { createStaffSession, isStaffAuthenticated, isValidStaffPassword } from "@/lib/staff-auth"
 import { readLiveLog } from "@/app/staff/actions"

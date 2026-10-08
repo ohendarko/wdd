@@ -1,3 +1,6 @@
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 import QRCode from "qrcode"
 import { headers } from "next/headers"
 import { absoluteSiteUrl, posters } from "@/lib/hunt"

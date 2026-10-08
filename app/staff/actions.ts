@@ -1,11 +1,11 @@
 "use server"
 import { revalidatePath } from "next/cache"
-import { clearHuntLog, getHuntLog, markPrizeGiven } from "@/lib/log"
+import { clearHuntLog, getHuntLog, markPrizeGiven, type HuntLog } from "@/lib/log"
 import { isStaffAuthenticated, staffCookieName } from "@/lib/staff-auth"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 
-export async function readLiveLog() { if (!(await isStaffAuthenticated())) return { teams: [], events: [] }; return getHuntLog() }
+export async function readLiveLog(): Promise<HuntLog> { if (!(await isStaffAuthenticated())) return { teams: [], events: [], status: { configured: false, variables: [], connection: "Unauthorized", teamCount: 0, eventCount: 0 } }; return getHuntLog() }
 export async function clearLiveLog() { if (!(await isStaffAuthenticated())) return { error: "Unauthorized" }; try { await clearHuntLog(); revalidatePath("/staff"); return { ok: true } } catch (error) { console.error("[staff] clear log failed:", error); return { error: "Unable to clear the log." } } }
 export async function logoutStaff() {
   (await cookies()).delete(staffCookieName())
