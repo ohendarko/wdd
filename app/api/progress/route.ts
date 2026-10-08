@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server"
 import { readProgress } from "@/app/actions"
+import { getLatestToken } from "@/lib/log"
 import { posterByToken, posterById } from "@/lib/hunt"
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const token = url.searchParams.get("t") || ""
   const posterToken = url.searchParams.get("poster")
-  const progress = await readProgress(token)
+  let progress = await readProgress(token)
+  let latestToken: string = token
+  if (progress?.teamId) { const remote = await getLatestToken(progress.teamId).catch(() => null); const remoteProgress = remote ? await readProgress(remote) : null; if (remoteProgress && (!progress.updatedAt || remoteProgress.updatedAt > progress.updatedAt)) { progress = remoteProgress; latestToken = remote! } }
   if (!progress) return NextResponse.json({ progress: null }, { status: 401 })
 
   // Only send what the team is allowed to see. Never send accepted answers.
@@ -19,7 +22,7 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json({
-    token,
+    token: latestToken,
     progress,
     finished: Boolean(progress.finishedAt),
     clue: progress.nextPosterId ? posterById(progress.nextPosterId)?.clue : undefined,
