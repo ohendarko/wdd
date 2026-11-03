@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server"
-import { readProgress } from "@/app/actions"
+import { readProgress, repairProgressToken } from "@/app/actions"
 import { getLatestToken } from "@/lib/log"
-import { posterByToken, posterById } from "@/lib/hunt"
+import { posterByToken, posterById, posters } from "@/lib/hunt"
+import { getStage } from "@/lib/stage"
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
   const token = url.searchParams.get("t") || ""
   const posterToken = url.searchParams.get("poster")
-  let progress = await readProgress(token)
-  let latestToken: string = token
+  const repaired = await repairProgressToken(token)
+  let progress = repaired.progress
+  let latestToken: string = repaired.token
   if (progress?.teamId) { const remote = await getLatestToken(progress.teamId).catch(() => null); const remoteProgress = remote ? await readProgress(remote) : null; if (remoteProgress && (!progress.updatedAt || remoteProgress.updatedAt > progress.updatedAt)) { progress = remoteProgress; latestToken = remote! } }
   if (!progress) return NextResponse.json({ progress: null }, { status: 401 })
 

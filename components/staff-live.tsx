@@ -2,9 +2,10 @@
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { clearLiveLog, logoutStaff, readLiveLog } from "@/app/staff/actions"
 import type { HuntEvent, HuntLog, HuntSummary } from "@/lib/log"
+import { formatDateTime, formatDuration } from "@/lib/format"
 
-function time(value?: string) { return value ? new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "—" }
-function duration(start?: string, finish?: string) { if (!start || !finish) return "—"; const seconds = Math.max(0, Math.floor((Date.parse(finish) - Date.parse(start)) / 1000)); return `${Math.floor(seconds / 60)}m ${seconds % 60}s` }
+const time = formatDateTime
+const duration = formatDuration
 function status(team: HuntSummary) { return team.finishedAt ? "Finished" : team.solved.length ? `Stop ${team.solved.length} of 3` : team.introSolvedAt ? "Stop 1 of 3" : "Start riddle" }
 function eventText(event: HuntEvent) { if (event.type === "team_created") return `${event.teamName} started the hunt`; if (event.type === "intro_solved") return `${event.teamName} solved the start riddle`; if (event.type === "wrong_answer") return `${event.teamName} submitted a wrong answer`; if (event.type === "finished") return `${event.teamName} finished`; return `${event.teamName} cracked their ${event.level} stop` }
 
