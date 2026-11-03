@@ -5,20 +5,8 @@ import { redirect } from "next/navigation"
 import { readProgress } from "@/app/actions"
 import { PrizeButton } from "@/components/prize-button"
 import { isStaffAuthenticated } from "@/lib/staff-auth"
+import { formatDateTime, formatDuration } from "@/lib/format"
 
-function formatTorontoTime(value: string | undefined) {
-  if (!value) return ""
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Toronto", dateStyle: "medium", timeStyle: "short" }).format(new Date(value))
-}
-
-function formatDuration(startedAt: string | undefined, finishedAt: string | undefined) {
-  if (!startedAt || !finishedAt) return ""
-  const totalSeconds = Math.max(0, Math.floor((new Date(finishedAt).getTime() - new Date(startedAt).getTime()) / 1000))
-  const hours = Math.floor(totalSeconds / 3600)
-  const minutes = Math.floor((totalSeconds % 3600) / 60)
-  const seconds = totalSeconds % 60
-  return [hours ? `${hours}h` : "", minutes ? `${minutes}m` : "", `${seconds}s`].filter(Boolean).join(" ")
-}
 
 export default async function VerifyPage({ searchParams }: { searchParams: Promise<{ t?: string }> }) {
   const { t } = await searchParams
@@ -36,7 +24,7 @@ export default async function VerifyPage({ searchParams }: { searchParams: Promi
             <div className="mt-8 flex flex-col gap-3 text-left">
               <div className="rounded-2xl bg-white/70 p-4"><p className="text-xs font-bold uppercase tracking-wider opacity-70">Team</p><p className="mt-1 text-2xl font-black">{progress.teamName}</p></div>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl bg-white/70 p-4"><p className="text-xs font-bold uppercase tracking-wider opacity-70">Finish time</p><p className="mt-1 font-bold">{formatTorontoTime(finishAt)}</p><p className="text-xs opacity-70">America/Toronto</p></div>
+                <div className="rounded-2xl bg-white/70 p-4"><p className="text-xs font-bold uppercase tracking-wider opacity-70">Finish time</p><p className="mt-1 font-bold">{formatDateTime(finishAt)}</p><p className="text-xs opacity-70">America/Toronto</p></div>
                 <div className="rounded-2xl bg-white/70 p-4"><p className="text-xs font-bold uppercase tracking-wider opacity-70">Total time</p><p className="mt-1 font-bold">{formatDuration(progress.startedAt, finishAt)}</p></div>
               </div>
             </div>
