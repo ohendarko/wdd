@@ -159,6 +159,17 @@
 }
 
 .team-wallpaper {
+  position: relative;
+  isolation: isolate;
+  background-color: transparent;
+}
+
+.team-wallpaper-pattern {
+  position: fixed;
+  inset: -20px;
+  z-index: -1;
+  pointer-events: none;
+  filter: blur(1.5px);
   background-color: var(--support-gray);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300' viewBox='0 0 300 300'%3E%3Cg fill='none' stroke='%237A00E6' stroke-opacity='.08' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M24 28h22v14H24zM28 34h3m3 0h3m-6 4h8'/%3E%3Cpath d='M86 20l6 6-5 25-5-2 3-25 1-4zm1 7l7 2'/%3E%3Ccircle cx='151' cy='30' r='12'/%3E%3Cpath d='M197 20c-8 0-13 7-11 14 2 7 10 12 17 8 7-4 7-14 1-19-2-2-4-3-7-3zm-11 14c-4 2-7 5-8 9 7 3 14 2 19-2'/%3E%3Cpath d='M249 20c-3 7-10 12-10 18 0 7 5 11 10 11s10-4 10-11c0-6-7-11-10-18z'/%3E%3Cpath d='M30 91c8 3 13 10 12 18-7 2-14-2-17-8-2-4-1-8 5-10zm-6 12l-8-3m20 9l7 5'/%3E%3Ccircle cx='94' cy='103' r='9'/%3E%3Cpath d='M101 110l8 8m-11-13a6 6 0 11-8-8'/%3E%3Cpath d='M151 88c-5 7-12 12-12 19 0 6 5 10 12 10s12-4 12-10c0-7-7-12-12-19z'/%3E%3Cpath d='M209 88l4 8 9 1-7 6 2 9-8-4-8 4 2-9-7-6 9-1z'/%3E%3Cpath d='M265 91c-7-6-15 3-7 10 8 8 14 13 14 13s6-5 14-13c8-7 0-16-7-10-4-5-10-5-14 0z'/%3E%3Cpath d='M31 166a10 10 0 1118 6c-2 4-5 6-9 9-4-3-7-5-9-9m9-11v7m-4-3h8'/%3E%3Ccircle cx='95' cy='171' r='11'/%3E%3Cpath d='M95 164v8l5 3'/%3E%3Cpath d='M143 157h17l4 7v17h-25v-17zM147 157v-6h9v6m-13 10h21'/%3E%3Cpath d='M201 155l6 6 7-6 6 6-6 7 6 7-7 6-6-6-7 6-6-7 6-7-6-6z'/%3E%3Cpath d='M262 157c-2 5-8 9-8 15 0 6 4 10 9 10s9-4 9-10c0-6-6-10-10-15zm1 25v8m-5 0h10'/%3E%3Cpath d='M33 242l3 8 9 1-7 5 2 9-7-4-8 4 2-9-7-5 9-1z'/%3E%3Cpath d='M91 228h14v28H91zm-3-5h20v5H88zm3 28h14'/%3E%3Cpath d='M139 232c0-8 18-8 18 0v25h-18zm0 0h18m-14 0v-7h10v7m-15 25h24'/%3E%3Cpath d='M198 232h22v24h-22zm-4-5h30m-24 5v-10m16 10v-10m-13 16h11v8h-11z'/%3E%3Cpath d='M256 238c-4-5-13-2-9 5 4 6 9 10 9 10s5-4 9-10c4-7-5-10-9-5z'/%3E%3Cpath d='M25 278h12v16H25zm-2-3h16v3H23zm4 3v-4h10v4m-10 10h10'/%3E%3Cpath d='M72 274h16v22H72zm-3-4h22m-18 4v-8m14 8v-8m-11 13h8v7h-8z'/%3E%3Cpath d='M123 278c0-7 16-7 16 0v18h-16zm0 0h16m-12 0v-6h8v6m-14 18h24'/%3E%3C/g%3E%3C/svg%3E");
   background-repeat: repeat;
