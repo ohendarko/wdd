@@ -1,6 +1,6 @@
 export const tutorialSteps = [
   { emoji: "🔍", title: "Welcome to the hunt", text: "Find 3 hidden posters, solve a riddle at each one, and race to the finish. Your phone is your guide.", tip: "No app to download. It all runs in your browser." },
-  { emoji: "👥", title: "Your team", text: "Your team name and 4-digit PIN are your login. Remember your PIN: you can use it to log back in on any phone.", tip: "Playing on one phone is easiest. Teammates can join on their phones with the same name and PIN." },
+  { emoji: "👥", title: "Your team", text: "Your team name and 4-digit PIN are your login. Remember your PIN: you can use it to log back in on any phone.", tip: "Write down your team name and PIN, and don't use 0000." },
   { emoji: "🧩", title: "Unlock the hunt", text: "Solve the start riddle to begin. Then you'll get your first clue, pointing to the location of a hidden poster.", tip: "Every team gets the stops in a different order, so following other teams won't help!" },
   { emoji: "📷", title: "Find it and scan it", text: "Follow your clue to the poster. Tap 'Scan poster' in the app and point your camera at the QR code.", tip: "Use the Scan button inside the app, so you stay logged in." },
   { emoji: "💡", title: "Crack the riddle", text: "Each poster has a riddle. Type your answer. Unlimited tries, and small typos are forgiven. Get it right and you'll get your next clue.", tip: "Scanned the wrong poster? No penalty. The app will just show your current clue." },
@@ -11,7 +11,7 @@ export const tutorialSteps = [
 export const faqItems = [
   ["Do we need to download anything?", "No. The hunt runs in your phone's web browser."],
   ["How many people can be on a team?", "Teams of about 3 work best. Everyone can log in with the same team name and PIN, but one phone for scanning is easiest."],
-  ["We forgot our PIN. What now?", "Contact Darko, Kwadwo/CA at kwadwoohene.darko@sanofi.com. Your PIN can be reset, and your progress stays saved."],
+  ["We forgot our PIN. What now?", "For security policy reasons, we can't offer PIN resets in the game. Start again with a new team name. You already know where the posters are, so you'll catch up quickly!"],
   ["The scanner isn't working.", "Make sure you allowed camera access, there's good light, and you're holding the phone steady about 20–30 cm from the code. You can also scan with your phone's normal camera app and log in with your team name and PIN."],
   ["We scanned a poster and it says it's not our next stop.", "Every team gets the stops in a different order. Check your clue on the dashboard and keep hunting. There's no penalty."],
   ["What if we get the answer wrong?", "Try again. There's no limit on tries, and small spelling mistakes are accepted."],
